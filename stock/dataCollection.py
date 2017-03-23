@@ -2,6 +2,7 @@ from dataBase import connection
 import requests
 from bs4 import BeautifulSoup
 import re
+from lxml import etree
 
 conn = connection()
 cur = conn.cursor()
@@ -90,10 +91,18 @@ def financial_collection(year, mm, family, company_Id):
             }
     html = requests.post(url, headers=headers,
                          allow_redirects=False, data=data)
-    print(html.encoding)
     html.encoding = 'gbk'
     print(html.text)
+    html = etree.HTML(html.content)
+    content = html.xpath(
+        '//div[@class="zx_left"]/div[@class="clear"]/table/tr//text()')
+    for i in content:
+        print(i)
+        if '\r' in i:
+            content.remove(i)
+    print(content)
+
 
 if __name__ == "__main__":
-    company_Collection()
+    # company_Collection()
     financial_collection('2015', '-12-31', 'balancesheet', '000002')
