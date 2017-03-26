@@ -87,7 +87,8 @@ def financial_collection(year, mm, family, company_Id):
     }
     data = {'yyyy': year,
             'mm': mm,
-            'cwzb': family
+            'cwzb': family,
+            'button2': '�ύ'
             }
     html = requests.post(url, headers=headers,
                          allow_redirects=False, data=data)
@@ -95,14 +96,27 @@ def financial_collection(year, mm, family, company_Id):
     print(html.text)
     html = etree.HTML(html.content)
     content = html.xpath(
-        '//div[@class="zx_left"]/div[@class="clear"]/table/tr//text()')
-    for i in content:
-        print(i)
-        if '\r' in i:
-            content.remove(i)
-    print(content)
+        '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td//text()')
+    unit = html.xpath(
+        '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
+    unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
+    data = []
+    for i in range(4, len(content), 2):
+        if "合计" not in content[i]:
+            if content[i + 1] == ' ':
+                content[i + 1] = 0
+            else:
+                content[i + 1] = content[i + 1].replace(",", "")
+            data.append(
+                (company_Id, content[i], content[i + 1], unit, year, mm))
+    print(data)
+    sql = "INSERT INTO balancesheet(company_Id,accounting,amount,unit,year,period) VALUES (%s,%s,%s,%s,%s,%s) "
+    cur.executemany(sql, data)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 if __name__ == "__main__":
     # company_Collection()
-    financial_collection('2015', '-12-31', 'balancesheet', '000002')
+    financial_collection('2015', '-12-31', 'financialreport', '000002')
