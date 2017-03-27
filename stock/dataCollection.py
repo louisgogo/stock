@@ -81,9 +81,19 @@ def financial_collection(year, mm, family, company_Id):
     # year格式：2015；mm格式：-12-31，-09-30，-06-30，-03-31
     headers = {
         'Host': 'www.cninfo.com.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '61',
+        'Cache-Control': 'max-age=0',
+        'Origin': 'http://www.cninfo.com.cn',
+        U'pgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
-        'Accept': 'text/css,*/*;q=0.1',
-        'Connection': 'keep-alive'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'DNT': '1',
+        'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
+        'Cookie': 'JSESSIONID=F6669E68C04BC15E10251E927EAE099E'
     }
     data = {'yyyy': year,
             'mm': mm,
@@ -93,24 +103,24 @@ def financial_collection(year, mm, family, company_Id):
     html = requests.post(url, headers=headers,
                          allow_redirects=False, data=data)
     html.encoding = 'gbk'
-    print(html.text)
     html = etree.HTML(html.content)
     content = html.xpath(
-        '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td//text()')
+        '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
     unit = html.xpath(
         '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
     unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
     data = []
-    for i in range(4, len(content), 2):
-        if "合计" not in content[i]:
-            if content[i + 1] == ' ':
-                content[i + 1] = 0
+    print(content)
+    for i in range(4, len(content), 3):
+        if "合计" or "总计" not in content[i]:
+            if content[i + 2] == ' ':
+                content[i + 2] = 0
             else:
-                content[i + 1] = content[i + 1].replace(",", "")
+                content[i + 2] = content[i + 2].replace(",", "")
             data.append(
-                (company_Id, content[i], content[i + 1], unit, year, mm))
+                (family, company_Id, content[i], content[i + 2], unit, year, mm))
     print(data)
-    sql = "INSERT INTO balancesheet(company_Id,accounting,amount,unit,year,period) VALUES (%s,%s,%s,%s,%s,%s) "
+    sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,year,period) VALUES (%s,%s,%s,%s,%s,%s,%s) "
     cur.executemany(sql, data)
     conn.commit()
     cur.close()
