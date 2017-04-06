@@ -70,8 +70,6 @@ def company_Collection():
     sql = "INSERT INTO company(company_Id,company_Name,company_Place) VALUES (%s,%s,%s) "
     cur.executemany(sql, company)
     conn.commit()
-    cur.close()
-    conn.close()
 
 
 def financial_collection(year, mm, family, company_Id):
@@ -92,16 +90,16 @@ def financial_collection(year, mm, family, company_Id):
         'DNT': '1',
         'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
         'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
-        'Cookie': 'JSESSIONID=F6669E68C04BC15E10251E927EAE099E'
+        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
     }
     data = {'yyyy': year,
             'mm': mm,
             'cwzb': family,
             'button2': '�ύ'
             }
-    html = requests.post(url, headers=headers,
-                         allow_redirects=False, data=data)
+    s = requests.Session()
+    html = s.post(url, headers=headers,
+                  allow_redirects=False, data=data)
     html.encoding = 'gbk'
     html = etree.HTML(html.content)
     content = html.xpath(
@@ -111,22 +109,31 @@ def financial_collection(year, mm, family, company_Id):
     unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
     data = []
     print(content)
-    for i in range(4, len(content), 3):
-        if "合计" or "总计" not in content[i]:
-            if content[i + 2] == ' ':
-                content[i + 2] = 0
-            else:
-                content[i + 2] = content[i + 2].replace(",", "")
-            data.append(
-                (family, company_Id, content[i], content[i + 2], unit, year, mm))
+    if family in ('incomestatements', 'balancesheet', 'cashflow'):
+        for i in range(4, len(content), 2):
+            if "合计" or "总计" not in content[i]:
+                if content[i + 1] == ' ':
+                    content[i + 1] = 0
+                else:
+                    content[i + 1] = content[i + 1].replace(",", "")
+                data.append(
+                    (family, company_Id, content[i], content[i + 1], unit, year, mm))
+    else:
+        for i in range(4, len(content), 3):
+            if "合计" or "总计" not in content[i]:
+                if content[i + 2] == ' ':
+                    content[i + 2] = 0
+                else:
+                    content[i + 2] = content[i + 2].replace(",", "")
+                data.append(
+                    (family, company_Id, content[i], content[i + 2], unit, year, mm))
     print(data)
     sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,year,period) VALUES (%s,%s,%s,%s,%s,%s,%s) "
     cur.executemany(sql, data)
     conn.commit()
-    cur.close()
-    conn.close()
 
 
 if __name__ == "__main__":
     # company_Collection()
     financial_collection('2015', '-12-31', 'financialreport', '000002')
+    financial_collection('2014', '-12-31', 'balancesheet', '000002')
