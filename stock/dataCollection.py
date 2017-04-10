@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from lxml import etree
+import time
 
 conn = connection()
 cur = conn.cursor()
@@ -98,15 +99,22 @@ def financial_collection(year, mm, family, company_Id):
             'button2': '�ύ'
             }
     s = requests.Session()
-    html = s.post(url, headers=headers,
-                  allow_redirects=False, data=data)
-    html.encoding = 'gbk'
-    html = etree.HTML(html.content)
-    content = html.xpath(
-        '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
-    unit = html.xpath(
-        '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
-    unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
+    while True:
+        try:
+            html = s.post(url, headers=headers,
+                          allow_redirects=False, data=data)
+            html.encoding = 'gbk'
+            html = etree.HTML(html.content)
+            content = html.xpath(
+                '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
+            unit = html.xpath(
+                '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
+            unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
+        except Exception as e:
+            print(e, "出现问题，重新执行")
+            time.sleep(2)
+        else:
+            break
     data = []
     print(content)
     if family in ('incomestatements', 'balancesheet', 'cashflow'):
@@ -134,6 +142,6 @@ def financial_collection(year, mm, family, company_Id):
 
 
 if __name__ == "__main__":
-    # company_Collection()
+    company_Collection()
     financial_collection('2015', '-12-31', 'financialreport', '000002')
     financial_collection('2014', '-12-31', 'balancesheet', '000002')

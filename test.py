@@ -1,1 +1,3 @@
-print('36,126,099,498.69'.replace(",", ""))
+import datetime
+
+print(datetime.date.today().year-1)
