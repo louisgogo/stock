@@ -165,7 +165,19 @@ def financial_collection(url, year, mm, family, company_Id):
     data_Collection(content, family, company_Id, unit)
     return content[1]
 
+
+def date_Change(dateYear, dateMonth):
+    dateDict = {'年度': '-12-31', '年1-3月': '-03-31', '年4-6月': '-06-30',
+                '年7-9月': '-09-30', '一季': '-03-31', '中期': '-06-30', '三季': '-09-30'}
+    try:
+        dateMonth = dateDict[dateMonth]
+    except Exception as e:
+        print(e)
+        pass
+    print((dateYear, dateMonth))
+
 if __name__ == "__main__":
+    date_Change('2016', '-09-30')
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
