@@ -99,10 +99,15 @@ def financial_collection(year, mm, family, company_Id):
             'button2': '�ύ'
             }
     s = requests.Session()
+    count = 0
     while True:
+        time.sleep(1)
         try:
+            count += 1
             html = s.post(url, headers=headers,
-                          allow_redirects=False, data=data)
+                          allow_redirects=True, data=data)
+            html = s.get(url, headers=headers,
+                         allow_redirects=False, data=data)
             html.encoding = 'gbk'
             html = etree.HTML(html.content)
             content = html.xpath(
@@ -113,35 +118,45 @@ def financial_collection(year, mm, family, company_Id):
         except Exception as e:
             print(e, "出现问题，重新执行")
             time.sleep(2)
+            if count >= 10:
+                print("数据采集有问题，跳过该数据继续采集...")
+                break
         else:
             break
     data = []
-    print(content)
+    period = content[1]
     if family in ('incomestatements', 'balancesheet', 'cashflow'):
         for i in range(4, len(content), 2):
-            if "合计" or "总计" not in content[i]:
-                if content[i + 1] == ' ':
-                    content[i + 1] = 0
-                else:
-                    content[i + 1] = content[i + 1].replace(",", "")
-                data.append(
-                    (family, company_Id, content[i], content[i + 1], unit, year, mm))
+            if content[i + 1] == '\xa0':
+                pass
+            else:
+                if "合计" not in content[i]:
+                    if "总计" not in content[i]:
+                        if "小计" not in content[i]:
+                            if content[i + 1] == ' ':
+                                content[i + 1] = 0
+                            else:
+                                content[
+                                    i + 1] = str(content[i + 1]).replace(",", "")
+                            data.append(
+                                (family, company_Id, content[i], content[i + 1], unit, period))
     else:
         for i in range(4, len(content), 3):
-            if "合计" or "总计" not in content[i]:
-                if content[i + 2] == ' ':
-                    content[i + 2] = 0
-                else:
-                    content[i + 2] = content[i + 2].replace(",", "")
-                data.append(
-                    (family, company_Id, content[i], content[i + 2], unit, year, mm))
+            if content[i + 2] == "\xa0":
+                pass
+            else:
+                if "合计" or "总计" or "小计" not in content[i]:
+                    if content[i + 2] == ' ':
+                        content[i + 2] = 0
+                    else:
+                        content[i + 2] = content[i + 2].replace(",", "")
+                    data.append(
+                        (family, company_Id, content[i], content[i + 2], unit, period))
     print(data)
-    sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,year,period) VALUES (%s,%s,%s,%s,%s,%s,%s) "
+    sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,period) VALUES (%s,%s,%s,%s,%s,%s) "
     cur.executemany(sql, data)
     conn.commit()
 
 
 if __name__ == "__main__":
-    company_Collection()
-    financial_collection('2015', '-12-31', 'financialreport', '000002')
-    financial_collection('2014', '-12-31', 'balancesheet', '000002')
+    financial_collection('2016', '-12-31', 'balancesheet', '000001')

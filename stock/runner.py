@@ -19,7 +19,7 @@ def run():
     year = (datetime.date.today().year - 1, datetime.date.today().year -
             2, datetime.date.today().year - 3)
     mm = ('-12-31', '-09-30', '-06-30', '-03-31')
-    family = ('incomestatements', 'balancesheet',
+    family = ('balancesheet', 'incomestatements',
               'cashflow', 'financialreport')
     for id in companyid_List:
         for f in family:
