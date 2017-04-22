@@ -73,56 +73,8 @@ def company_Collection():
     conn.commit()
 
 
-def financial_collection(year, mm, family, company_Id):
-    url = 'http://www.cninfo.com.cn/information/stock/{0}_.jsp?stockCode={1}'.format(
-        family, company_Id)
-    # type可选参数包括：incomestatements，balancesheet，cashflow，financialreport，注意变更url和data中对应的参数;
-    # year格式：2015；mm格式：-12-31，-09-30，-06-30，-03-31
-    headers = {
-        'Host': 'www.cninfo.com.cn',
-        'Connection': 'keep-alive',
-        'Content-Length': '61',
-        'Cache-Control': 'max-age=0',
-        'Origin': 'http://www.cninfo.com.cn',
-        U'pgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'DNT': '1',
-        'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
-    }
-    data = {'yyyy': year,
-            'mm': mm,
-            'cwzb': family,
-            'button2': '�ύ'
-            }
-    s = requests.Session()
-    count = 0
-    while True:
-        time.sleep(1)
-        try:
-            count += 1
-            html = s.post(url, headers=headers,
-                          allow_redirects=True, data=data)
-            html = s.get(url, headers=headers,
-                         allow_redirects=False, data=data)
-            html.encoding = 'gbk'
-            html = etree.HTML(html.content)
-            content = html.xpath(
-                '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
-            unit = html.xpath(
-                '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
-            unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
-        except Exception as e:
-            print(e, "出现问题，重新执行")
-            time.sleep(2)
-            if count >= 10:
-                print("数据采集有问题，跳过该数据继续采集...")
-                break
-        else:
-            break
+def data_Collection(content, family, company_Id, unit):
+    # 收集并存储股票信息
     data = []
     period = content[1]
     if family in ('incomestatements', 'balancesheet', 'cashflow'):
@@ -158,5 +110,70 @@ def financial_collection(year, mm, family, company_Id):
     conn.commit()
 
 
+def web_Reader(url, headers, data):
+    # 读取网页内容
+    s = requests.Session()
+    count = 0
+    while True:
+        time.sleep(1)
+        try:
+            count += 1
+            html = s.post(url, headers=headers,
+                          allow_redirects=True, data=data)
+            html.encoding = 'gbk'
+            html = etree.HTML(html.content)
+            content = html.xpath(
+                '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
+            unit = html.xpath(
+                '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
+            unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
+        except Exception as e:
+            print(e, "出现问题，重新执行")
+            time.sleep(1)
+            if count >= 10:
+                print("数据采集有问题，跳过该数据继续采集...")
+                break
+        else:
+            break
+    return content, unit
+
+
+def financial_collection(url, year, mm, family, company_Id):
+    # type可选参数包括：incomestatements，balancesheet，cashflow，financialreport，注意变更url和data中对应的参数;
+    # year格式：2015；mm格式：-12-31，-09-30，-06-30，-03-31
+    headers = {
+        'Host': 'www.cninfo.com.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '61',
+        'Cache-Control': 'max-age=0',
+        'Origin': 'http://www.cninfo.com.cn',
+        U'pgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'DNT': '1',
+        'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
+    }
+    data = {'yyyy': year,
+            'mm': mm,
+            'cwzb': family,
+            'button2': '�ύ'
+            }
+    content, unit = web_Reader(url, headers, data)
+    data_Collection(content, family, company_Id, unit)
+    return content[1]
+
 if __name__ == "__main__":
-    financial_collection('2016', '-12-31', 'balancesheet', '000001')
+    family = 'balancesheet'
+    company_Id = '000002'
+    url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
+        family, company_Id)
+    date = financial_collection(
+        url, '2014', '-12-31', 'balancesheet', 'company_Id')
+    print(date)
+    company_Id = '000001'
+    url = 'http://www.cninfo.com.cn/information/stock/{0}_.jsp?stockCode={1}'.format(
+        family, company_Id)
+    financial_collection(url, '2016', '-12-31', 'balancesheet', 'company_Id')

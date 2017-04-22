@@ -23,11 +23,10 @@ def run():
               'cashflow', 'financialreport')
     for id in companyid_List:
         for f in family:
-            for i in year:
-                for j in mm:
-                    print(id, f, i, j)
-                    time.sleep(2)
-                    financial_collection(i, j, f, id)
+            url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
+                f, id)
+            date = financial_collection(
+                url, '2016', '-12-31', 'f', 'id')
 
 
 if __name__ == "__main__":
