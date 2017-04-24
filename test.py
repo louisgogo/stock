@@ -1,3 +1,6 @@
 import datetime
-
-print(datetime.date.today().year-1)
+c=1
+a=c
+b=a
+c=2
+print(a,b)

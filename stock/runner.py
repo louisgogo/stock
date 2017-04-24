@@ -1,5 +1,5 @@
 from dataBase import connection, build
-from dataCollection import company_Collection, financial_collection
+from dataCollection import company_Collection, financial_collection, date_Change
 import datetime
 import time
 
@@ -29,8 +29,8 @@ def run():
             alldate.append((datetime.date.today().year, '-06-30'))
             if 9 <= datetime.date.today().month:
                 alldate.append((datetime.date.today().year, '-09-30'))
-    alldate = set(alldate)
     print(alldate)
+    print("-" * 50)
     family = ('balancesheet', 'incomestatements',
               'cashflow', 'financialreport')
     for id in companyid_List:
@@ -40,9 +40,21 @@ def run():
             date = financial_collection(
                 url, '2016', '-12-31', f, id)
             # 此处的日期可以随意填写，都会返回最新的报表数据的日期date
-            dateYear = date[:3]
+            dateYear = date[:4]
             dateMonth = date[4:]
-
+            dateYear, dateMonth = date_Change(dateYear, dateMonth)
+            print(dateYear, dateMonth)
+            print("-" * 50)
+            try:
+                alldate.remove((int(dateYear), dateMonth))
+            except:
+                pass
+            print(alldate)
+            print("-" * 50)
+            url = 'http://www.cninfo.com.cn/information/stock/{0}_.jsp?stockCode={1}'.format(
+                f, id)
+            for i in alldate:
+                financial_collection(url, i[0], i[1], f, id)
 
 if __name__ == "__main__":
     run()

@@ -130,7 +130,7 @@ def web_Reader(url, headers, data):
         except Exception as e:
             print(e, "出现问题，重新执行")
             time.sleep(1)
-            if count >= 10:
+            if count >= 50:
                 print("数据采集有问题，跳过该数据继续采集...")
                 break
         else:
@@ -174,10 +174,11 @@ def date_Change(dateYear, dateMonth):
     except Exception as e:
         print(e)
         pass
-    print((dateYear, dateMonth))
+    return int(dateYear), dateMonth
 
 if __name__ == "__main__":
-    date_Change('2016', '-09-30')
+    dateYear, dateMonth = date_Change('2016', '-09-30')
+    print(dateYear, dateMonth)
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
