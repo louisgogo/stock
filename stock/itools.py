@@ -9,7 +9,7 @@ def web_Reader(url, headers, data):
     s = requests.Session()
     count = 0
     while True:
-        time.sleep(1)
+        time.sleep(0)
         try:
             count += 1
             html = s.post(url, headers=headers,
@@ -23,7 +23,7 @@ def web_Reader(url, headers, data):
             unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
         except Exception as e:
             print(e, "出现问题，重新执行")
-            time.sleep(1)
+            time.sleep(3)
             if count >= 50:
                 print("数据采集有问题，跳过该数据继续采集...")
                 break
@@ -33,13 +33,14 @@ def web_Reader(url, headers, data):
 
 
 def date_Change(dateYear, dateMonth):
-    dateDict = {'年度': '-12-31', '年1-3月': '-03-31', '年4-6月': '-06-30',
-                '年7-9月': '-09-30', '一季': '-03-31', '中期': '-06-30', '三季': '-09-30'}
+    dateDict = {'年度': '-12-31', '年1-3月': '-03-31', '年1-6月': '-06-30',
+                '年1-9月': '-09-30', '一季': '-03-31', '中期': '-06-30', '三季': '-09-30'}
     try:
         dateMonth = dateDict[dateMonth]
     except Exception as e:
         print(e)
         pass
+    dateYear = int(dateYear)
     return dateYear, dateMonth
 
 
@@ -61,7 +62,7 @@ if __name__ == '__main__':
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'DNT': '1',
-        # 'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
+        'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
         'Accept-Encoding': 'gzip, deflate',
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
     }
