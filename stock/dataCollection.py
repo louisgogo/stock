@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 from lxml import etree
 import time
+from itools import web_Reader, date_Change
 
 conn = connection()
 cur = conn.cursor()
@@ -42,7 +43,7 @@ def company_Collection():
             "([0-9]+) (.+)"), i).group(1)
         company_Name = re.search(re.compile(
             "([0-9]+) (.+)"), i).group(2).strip()
-        company_Place = "深市主板"
+        company_Place = "szmb"
         company.append((company_Id, company_Name, company_Place))
     for i in companyList_ZX:
         i = i.get_text()
@@ -50,7 +51,7 @@ def company_Collection():
             "([0-9]+) (.+)"), i).group(1)
         company_Name = re.search(re.compile(
             "([0-9]+) (.+)"), i).group(2).strip()
-        company_Place = "中小企业板"
+        company_Place = "szsme"
         company.append((company_Id, company_Name, company_Place))
     for i in companyList_CY:
         i = i.get_text()
@@ -58,7 +59,7 @@ def company_Collection():
             "([0-9]+) (.+)"), i).group(1)
         company_Name = re.search(re.compile(
             "([0-9]+) (.+)"), i).group(2).strip()
-        company_Place = "创业板"
+        company_Place = "szcn"
         company.append((company_Id, company_Name, company_Place))
     for i in companyList_SH:
         i = i.get_text()
@@ -66,7 +67,7 @@ def company_Collection():
             "([0-9]+) (.+)"), i).group(1)
         company_Name = re.search(re.compile(
             "([0-9]+) (.+)"), i).group(2).strip()
-        company_Place = "沪市主板"
+        company_Place = "shmb"
         company.append((company_Id, company_Name, company_Place))
     sql = "INSERT INTO company(company_Id,company_Name,company_Place) VALUES (%s,%s,%s) "
     cur.executemany(sql, company)
@@ -104,38 +105,8 @@ def data_Collection(content, family, company_Id, unit):
                         content[i + 2] = content[i + 2].replace(",", "")
                     data.append(
                         (family, company_Id, content[i], content[i + 2], unit, period))
-    print(data)
-    sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,period) VALUES (%s,%s,%s,%s,%s,%s) "
-    cur.executemany(sql, data)
-    conn.commit()
-
-
-def web_Reader(url, headers, data):
-    # 读取网页内容
-    s = requests.Session()
-    count = 0
-    while True:
-        time.sleep(1)
-        try:
-            count += 1
-            html = s.post(url, headers=headers,
-                          allow_redirects=True, data=data)
-            html.encoding = 'gbk'
-            html = etree.HTML(html.content)
-            content = html.xpath(
-                '//div[@class="zx_left"]/div[@class="clear"]/table/tr/td[not(@rowspan)]//text()')
-            unit = html.xpath(
-                '//div[@class="zx_left"]/div[@class="zx_right_title"]/p//text()')
-            unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
-        except Exception as e:
-            print(e, "出现问题，重新执行")
-            time.sleep(1)
-            if count >= 50:
-                print("数据采集有问题，跳过该数据继续采集...")
-                break
-        else:
-            break
-    return content, unit
+    # print(data)
+    return data
 
 
 def financial_collection(url, year, mm, family, company_Id):
@@ -152,7 +123,7 @@ def financial_collection(url, year, mm, family, company_Id):
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'DNT': '1',
-        'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
+        # 'Referer': 'http://www.cninfo.com.cn/information/%s/szmb%s.html' % (family, company_Id),
         'Accept-Encoding': 'gzip, deflate',
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
     }
@@ -162,31 +133,19 @@ def financial_collection(url, year, mm, family, company_Id):
             'button2': '�ύ'
             }
     content, unit = web_Reader(url, headers, data)
-    data_Collection(content, family, company_Id, unit)
-    return content[1]
+    data = data_Collection(content, family, company_Id, unit)
+    return content[1], data
 
-
-def date_Change(dateYear, dateMonth):
-    dateDict = {'年度': '-12-31', '年1-3月': '-03-31', '年4-6月': '-06-30',
-                '年7-9月': '-09-30', '一季': '-03-31', '中期': '-06-30', '三季': '-09-30'}
-    try:
-        dateMonth = dateDict[dateMonth]
-    except Exception as e:
-        print(e)
-        pass
-    return int(dateYear), dateMonth
 
 if __name__ == "__main__":
-    dateYear, dateMonth = date_Change('2016', '-09-30')
-    print(dateYear, dateMonth)
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
         family, company_Id)
     date = financial_collection(
-        url, '2014', '-12-31', 'balancesheet', 'company_Id')
+        url, 2014, '-12-31', 'balancesheet', 'company_Id')
     print(date)
     company_Id = '000001'
     url = 'http://www.cninfo.com.cn/information/stock/{0}_.jsp?stockCode={1}'.format(
         family, company_Id)
-    financial_collection(url, '2016', '-12-31', 'balancesheet', 'company_Id')
+    financial_collection(url, 2015, '-12-31', 'balancesheet', 'company_Id')

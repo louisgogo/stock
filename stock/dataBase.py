@@ -34,5 +34,14 @@ def build():
     cur.close()
     conn.close()
 
+
+def insert(data):
+    conn = connection()
+    cur = conn.cursor()
+    sql = "INSERT INTO financialsheet(company_Family,company_Id,accounting,amount,unit,period) VALUES (%s,%s,%s,%s,%s,%s) "
+    cur.executemany(sql, data)
+    conn.commit()
+    print("成功插入一条数据")
+
 if __name__ == '__main__':
     build()

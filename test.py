@@ -1,6 +1,6 @@
 import datetime
-c=1
-a=c
-b=a
-c=2
-print(a,b)
+a = set()
+a.add(1)
+a.add(3)
+a.add(1)
+print(a)
