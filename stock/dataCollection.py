@@ -5,6 +5,9 @@ import re
 from lxml import etree
 import time
 from itools import web_Reader, date_Change
+import os
+import json
+import datetime
 
 conn = connection()
 cur = conn.cursor()
@@ -137,7 +140,76 @@ def financial_collection(url, year, mm, family, company_Id):
     return content[1], data
 
 
+def dataDown(stocktype, code):
+    # 'market': 'sz','type': 'lrb'|'fzb','code': '000001','orgid': 'gssz0000001',
+    # 'minYear': '2015','maxYear': '2017','cw_code': '000001'
+    headers = {
+        'Host': 'www.cninfo.com.cn',
+        'Connection': 'keep-alive',
+        'Content-Length': '61',
+        'Cache-Control': 'max-age=0',
+        'Origin': 'http://www.cninfo.com.cn',
+        U'pgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'DNT': '1',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
+    }
+    # 提取出该股票代码的最早的报表年份
+    data = {'keyWord': code,
+            'maxNum': 10,
+            'hq_or_cw': 2
+            }
+    url = 'http://www.cninfo.com.cn/cninfo-new/data/query'
+    s = requests.Session()
+    while True:
+        try:
+            time.sleep(2)
+            html = s.post(url, headers=headers,
+                          allow_redirects=True, data=data)
+        except Exception as e:
+            print("dataDown出现问题，重新执行，问题原因：", e)
+        else:
+            break
+    info = json.loads(html.text)
+    info = info[0]
+    minYear = info['startTime']
+    maxYear = datetime.date.today().year
+    market = info['market']
+    orgid = info['orgId']
+
+    # 提取出对应的报表数据
+    data = {'market': market,
+            'type': stocktype,
+            'code': code,
+            'orgid': orgid,
+            'minYear': minYear,
+            'maxYear': maxYear,
+            'cw_code': code
+            }
+    url = 'http://www.cninfo.com.cn/cninfo-new/data/download'
+    s = requests.Session()
+    title = market + '_' + stocktype + '_' + code + \
+        '_' + str(minYear) + '_' + str(maxYear)
+    while True:
+        try:
+            time.sleep(2)
+            html = s.post(url, headers=headers,
+                          allow_redirects=True, data=data)
+        except Exception as e:
+            print("dataDown出现问题，重新执行，问题原因：", e)
+        else:
+            break
+    path = os.path.join(os.path.dirname(__file__) + '\data\%s.zip' % title)
+    with open(path, "wb") as code:
+        code.write(html.content)
+        print(title, "文件生成完毕")
+
+
 if __name__ == "__main__":
+    dataDown('fzb', '000005')
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
