@@ -2,6 +2,7 @@ import requests
 import time
 from lxml import etree
 import re
+import os
 
 
 def web_Reader(url, headers, data):
@@ -44,7 +45,25 @@ def date_Change(dateYear, dateMonth):
     return dateYear, dateMonth
 
 
+def file_Del():
+    idFamily = []
+    path = os.path.dirname(__file__) + '\data'
+    fileList = os.listdir(path)
+    for i in fileList:
+        filePath = os.path.dirname(__file__) + '\data\%s' % i
+        if os.path.getsize(filePath) == 14203:
+            os.remove(filePath)
+        id = i.split('_')[2]
+        family = i.split('_')[1]
+        idFamily.append((id, family))
+    print("空文件清理完毕")
+    return idFamily
+
+
 if __name__ == '__main__':
+    idFamily = file_Del()
+    print(idFamily)
+    print(('000001', 'lrb') in idFamily)
     dateYear, dateMonth = date_Change('2016', '-09-30')
     print(dateYear, dateMonth)
     family = 'balancesheet'

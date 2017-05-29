@@ -140,7 +140,7 @@ def financial_collection(url, year, mm, family, company_Id):
     return content[1], data
 
 
-def dataDown(stocktype, code):
+def data_Down(stocktype, code, proxy, ip):
     # 'market': 'sz','type': 'lrb'|'fzb','code': '000001','orgid': 'gssz0000001',
     # 'minYear': '2015','maxYear': '2017','cw_code': '000001'
     headers = {
@@ -166,10 +166,11 @@ def dataDown(stocktype, code):
     s = requests.Session()
     while True:
         try:
-            time.sleep(2)
+            time.sleep(0)
             html = s.post(url, headers=headers,
                           allow_redirects=True, data=data)
         except Exception as e:
+            time.sleep(3)
             print("dataDown出现问题，重新执行，问题原因：", e)
         else:
             break
@@ -196,8 +197,15 @@ def dataDown(stocktype, code):
     while True:
         try:
             time.sleep(2)
-            html = s.post(url, headers=headers,
-                          allow_redirects=True, data=data)
+            if proxy == 1:
+                proxies = {"http": "http://" + ip,
+                           "https": "https://" + ip
+                           }
+                html = s.post(url, headers=headers,
+                              allow_redirects=True, data=data, proxies=proxies)
+            else:
+                html = s.post(url, headers=headers,
+                              allow_redirects=True, data=data)
         except Exception as e:
             print("dataDown出现问题，重新执行，问题原因：", e)
         else:
@@ -206,10 +214,12 @@ def dataDown(stocktype, code):
     with open(path, "wb") as code:
         code.write(html.content)
         print(title, "文件生成完毕")
+    print(os.path.getsize(path))
+    return os.path.getsize(path)
 
 
 if __name__ == "__main__":
-    dataDown('fzb', '000005')
+    data_Down('fzb', '000005', 0, '201.236.222.231:8080')
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (
