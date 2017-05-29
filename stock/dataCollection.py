@@ -3,11 +3,11 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from lxml import etree
-import time
 from itools import web_Reader, date_Change
 import os
 import json
 import datetime
+import zipfile
 
 conn = connection()
 cur = conn.cursor()
@@ -163,18 +163,21 @@ def data_Down(stocktype, code, proxy, ip):
             'hq_or_cw': 2
             }
     url = 'http://www.cninfo.com.cn/cninfo-new/data/query'
+    requests.adapters.DEFAULT_RETRIES = 5
     s = requests.Session()
+    s.keep_alive = False
     while True:
         try:
-            time.sleep(0)
             html = s.post(url, headers=headers,
                           allow_redirects=True, data=data)
+            info = json.loads(html.text)
         except Exception as e:
-            time.sleep(3)
-            print("dataDown出现问题，重新执行，问题原因：", e)
+            print("dataDown-001出现问题，重新执行，问题原因：", e)
         else:
             break
-    info = json.loads(html.text)
+    if info == []:
+        print("该公司信息不存在")
+        return False
     info = info[0]
     minYear = info['startTime']
     maxYear = datetime.date.today().year
@@ -192,11 +195,16 @@ def data_Down(stocktype, code, proxy, ip):
             }
     url = 'http://www.cninfo.com.cn/cninfo-new/data/download'
     s = requests.Session()
+    s.keep_alive = False
     title = market + '_' + stocktype + '_' + code + \
         '_' + str(minYear) + '_' + str(maxYear)
+    # count用来统计错误的次数
+    count = 0
     while True:
         try:
-            time.sleep(2)
+            if count == 5:
+                print("尝试次数到上限，更换下一个代理地址！")
+                return True
             if proxy == 1:
                 proxies = {"http": "http://" + ip,
                            "https": "https://" + ip
@@ -207,19 +215,26 @@ def data_Down(stocktype, code, proxy, ip):
                 html = s.post(url, headers=headers,
                               allow_redirects=True, data=data)
         except Exception as e:
-            print("dataDown出现问题，重新执行，问题原因：", e)
+            print("dataDown-002出现问题，重新执行，问题原因：", e)
+            count += 1
         else:
             break
     path = os.path.join(os.path.dirname(__file__) + '\data\%s.zip' % title)
     with open(path, "wb") as code:
         code.write(html.content)
         print(title, "文件生成完毕")
+    try:
+        zipfile.ZipFile(path, "r")
+    except:
+        os.remove(path)
+        print("压缩包已经损坏，进行删除")
+        return True
     print(os.path.getsize(path))
-    return os.path.getsize(path)
+    return False
 
 
 if __name__ == "__main__":
-    data_Down('fzb', '000005', 0, '201.236.222.231:8080')
+    # data_Down('fzb', '000005', 0, '201.236.222.231:8080')
     family = 'balancesheet'
     company_Id = '000002'
     url = "http://www.cninfo.com.cn/information/%s/szmb%s.html" % (

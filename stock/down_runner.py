@@ -21,21 +21,34 @@ def run(ip):
     proxy = 0
     # 不启动代理服务器
     family = ('fzb', 'lrb', 'llb')
+    # 此处count用于统计使用的代理的序号
+    count = -1
     for id in companyid_List:
         for f in family:
             if (id[0], f) not in idFamily:
+                print("=" * 50)
                 print(f, id[0])
-                if data_Down(f, id[0], proxy, ip[0]) == 14203:
-                    if len(ip) == 0:
-                        sys.exit("代理服务地址用完，退出程序")
+                while data_Down(f, id[0], proxy, ip[count]):
+                    count += 1
+                    print("-" * 50)
                     print("启用代理服务器，继续采集")
                     proxy = 1
-                    data_Down(f, id[0], proxy, ip[0])
-                    print(ip[0])
-                    ip.remove(ip[0])
-                    idFamily = file_Del()
+                    if len(ip) == count:
+                        count = -1
+                        proxy = 0
+                        print("重新循环各个代理地址")
+                        # sys.exit("代理服务地址用完，退出程序")
+                    print(ip[count])
 
 
 if __name__ == "__main__":
-    ip = ['201.236.222.231:8080', '109.169.6.152:8080', '5.135.195.166:3128']
+    ip = ['216.56.48.245:80',
+          '216.56.48.247:80',
+          '216.56.48.243:80',
+          '216.56.48.248:80',
+          '63.150.152.151:3128',
+          '63.150.152.151:8080',
+          '210.35.171.5:80',
+          '58.97.81.11:80'
+          ]
     run(ip)

@@ -1,16 +1,16 @@
 import requests
-import time
 from lxml import etree
 import re
 import os
+import zipfile
 
 
 def web_Reader(url, headers, data):
     # 读取网页内容
     s = requests.Session()
+    s.keep_alive = False
     count = 0
     while True:
-        time.sleep(0)
         try:
             count += 1
             html = s.post(url, headers=headers,
@@ -24,7 +24,6 @@ def web_Reader(url, headers, data):
             unit = re.search(re.compile('\(单位：(.+)\)'), str(unit)).group(1)
         except Exception as e:
             print(e, "出现问题，重新执行")
-            time.sleep(3)
             if count >= 50:
                 print("数据采集有问题，跳过该数据继续采集...")
                 break
@@ -51,7 +50,10 @@ def file_Del():
     fileList = os.listdir(path)
     for i in fileList:
         filePath = os.path.dirname(__file__) + '\data\%s' % i
-        if os.path.getsize(filePath) == 14203:
+        # 判断压缩包是否已经损坏
+        try:
+            zipfile.ZipFile(filePath, "r")
+        except:
             os.remove(filePath)
         id = i.split('_')[2]
         family = i.split('_')[1]
