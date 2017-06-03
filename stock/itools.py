@@ -3,6 +3,7 @@ from lxml import etree
 import re
 import os
 import zipfile
+from selenium import webdriver
 
 
 def web_Reader(url, headers, data):
@@ -63,68 +64,44 @@ def file_Del():
 
 
 def vpn_List():
-    with open('vpn.txt', 'r') as f:
-        vpn = f.readlines()
-    print(vpn)
-    ip = str(vpn[0])
-    print(ip)
-    url = 'http://www.gatherproxy.com/en/proxylist/anonymity/?t=Anonymous'
-    data = {
-        'Type': 'anonymous',
-        'PageIdx': '1',
-        'Uptime': '0'
-    }
-    headers = {
-        'Host': 'www.gatherproxy.com',
-        'Proxy-Connection': 'keep-alive',
-        'Content-Length': '24',
-        'Cache-Control': 'max-age=0',
-        'Origin': 'http://www.gatherproxy.com',
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'DNT': '1',
-        'Referer': 'http://www.gatherproxy.com/zh/proxylist/anonymity/?t=Anonymous',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6'
-    }
-    count = 0
-    status = 0
-    while status != 200:
-        count += 1
-        if count == 3:
-            break
-        try:
-            proxies = {"http": "http://" + str(ip),
-                       "https": "https://" + str(ip)
-                       }
-            html = requests.post(url, headers=headers,
-                                 allow_redirects=True, data=data)
-            status = html.status_code
-            html.encoding = 'utf-8'
-            print(html.content)
-            html = etree.HTML(html.text)
-            content = html.xpath(
-                '//div[@class="proxy-list"]/table//tr')
-        except Exception as e:
-            print("vpn_List出现问题，重新执行，问题原因：", e)
-        else:
-            break
+    driver = webdriver.Chrome()
+    driver.implicitly_wait(10)
+    driver.get("http://www.gatherproxy.com/en/proxylist/anonymity/?t=Anonymous")
+    js = "var q=document.body.scrollTop=500"
+    driver.execute_script(js)
+    driver.find_element_by_tag_name("input").click()
+    # 读取具体的页码
+    count = len(driver.find_elements_by_xpath(
+        "//div[@class='pagenavi']/a")) + 1
     ipList = []
-    for tr in content:
-        td = tr.xpath('./td//text()')
-        print(td)
+    for a in range(1, count + 1):
+        js = "var q=document.body.scrollTop=100000"
+        driver.execute_script(js)
         try:
-            ip = re.search(
-                "'(.*)'", str(td[1])).group(1) + ':' + re.search("'(.*)'", str(td[2])).group(1)
-            ipList.append(ip)
+            driver.find_element_by_link_text(str(a)).click()
         except:
             pass
+        html = etree.HTML(driver.page_source)
+        content = html.xpath(
+            '//div[@class="proxy-list"]/table//tr')
+        for tr in content:
+            try:
+                td = tr.xpath('./td//text()')
+                print(td)
+                if int(re.search('(.*)ms', td[10]).group(1)) <= 300 and int(td[7]) > 100:
+                    ip = td[2] + ':' + td[4]
+                    ipList.append(ip)
+            except:
+                pass
     print(ipList)
+    return ipList
+    # with open('vpn.txt', 'w') as f:
+    #     for i in ipList:
+    #         f.write(i + '\n')
+
 
 if __name__ == '__main__':
-    vpn_List()
+    ipList = vpn_List()
     # idFamily = file_Del()
     # print(idFamily)
     # print(('000001', 'lrb') in idFamily)

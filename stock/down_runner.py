@@ -1,7 +1,12 @@
 from dataBase import connection, build, insert
 from dataCollection import company_Collection, data_Down
-from itools import file_Del
+from itools import file_Del, vpn_List
 import sys
+import socket
+import time
+
+timeout = 20
+socket.setdefaulttimeout(timeout)
 
 
 def run(ip):
@@ -34,21 +39,15 @@ def run(ip):
                     print("启用代理服务器，继续采集")
                     proxy = 1
                     if len(ip) == count:
-                        count = -1
-                        proxy = 0
-                        print("重新循环各个代理地址")
-                        # sys.exit("代理服务地址用完，退出程序")
+                        print("重新获取代理地址，继续执行程序")
+                        return True
                     print(ip[count])
+    print("所有数据采集完毕，程序自动退出")
+    return False
 
 
 if __name__ == "__main__":
-    ip = ['216.56.48.245:80',
-          '216.56.48.247:80',
-          '216.56.48.243:80',
-          '216.56.48.248:80',
-          '63.150.152.151:3128',
-          '63.150.152.151:8080',
-          '210.35.171.5:80',
-          '58.97.81.11:80'
-          ]
-    run(ip)
+    ip = vpn_List()
+    while run(ip):
+        time.sleep(1800)
+        ip = vpn_List()

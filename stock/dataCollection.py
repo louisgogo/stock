@@ -11,6 +11,7 @@ import zipfile
 
 conn = connection()
 cur = conn.cursor()
+requests.adapters.DEFAULT_RETRIES = 5
 
 
 def company_Collection():
@@ -202,7 +203,7 @@ def data_Down(stocktype, code, proxy, ip):
     count = 0
     while True:
         try:
-            if count == 5:
+            if count == 2:
                 print("尝试次数到上限，更换下一个代理地址！")
                 return True
             if proxy == 1:
@@ -225,6 +226,7 @@ def data_Down(stocktype, code, proxy, ip):
         print(title, "文件生成完毕")
     try:
         zipfile.ZipFile(path, "r")
+        zipfile.ZipFile.close()
     except:
         os.remove(path)
         print("压缩包已经损坏，进行删除")
