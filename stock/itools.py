@@ -93,11 +93,10 @@ def vpn_List():
                     ipList.append(ip)
             except:
                 pass
-    print(ipList)
+    with open('vpn.txt', 'w') as f:
+        for i in ipList:
+            f.write(i + '\n')
     return ipList
-    # with open('vpn.txt', 'w') as f:
-    #     for i in ipList:
-    #         f.write(i + '\n')
 
 
 if __name__ == '__main__':

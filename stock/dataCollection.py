@@ -150,7 +150,7 @@ def data_Down(stocktype, code, proxy, ip):
         'Content-Length': '61',
         'Cache-Control': 'max-age=0',
         'Origin': 'http://www.cninfo.com.cn',
-        U'pgrade-Insecure-Requests': '1',
+        'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -196,7 +196,7 @@ def data_Down(stocktype, code, proxy, ip):
             }
     url = 'http://www.cninfo.com.cn/cninfo-new/data/download'
     s = requests.Session()
-    s.keep_alive = False
+    # s.keep_alive = False
     title = market + '_' + stocktype + '_' + code + \
         '_' + str(minYear) + '_' + str(maxYear)
     # count用来统计错误的次数
@@ -212,9 +212,11 @@ def data_Down(stocktype, code, proxy, ip):
                            }
                 html = s.post(url, headers=headers,
                               allow_redirects=True, data=data, proxies=proxies)
+                print("启用代理服务")
             else:
                 html = s.post(url, headers=headers,
                               allow_redirects=True, data=data)
+                print("获取网页....")
         except Exception as e:
             print("dataDown-002出现问题，重新执行，问题原因：", e)
             count += 1
@@ -226,7 +228,6 @@ def data_Down(stocktype, code, proxy, ip):
         print(title, "文件生成完毕")
     try:
         zipfile.ZipFile(path, "r")
-        zipfile.ZipFile.close()
     except:
         os.remove(path)
         print("压缩包已经损坏，进行删除")

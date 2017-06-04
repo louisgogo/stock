@@ -47,7 +47,12 @@ def run(ip):
 
 
 if __name__ == "__main__":
-    ip = vpn_List()
+    ip = []
+    with open('vpn.txt', 'r') as f:
+        vpnList = f.readlines()
+    for i in vpnList:
+        ip.append(i.strip())
+    print(ip)
     while run(ip):
         time.sleep(1800)
         ip = vpn_List()
